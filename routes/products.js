@@ -5,17 +5,16 @@ export const productRoutes = express.Router();
 
 /**
  * Fetch products by category
- * Identical SQL Injection flaw to users.js (Must be grouped by the AI)
  */
 productRoutes.get('/', async (req, res, next) => {
-  const category = req.query.category; // Untrusted Source
+  const category = req.query.category;
   const limit = parseInt(req.query.limit) || 10;
   
-  // CRITICAL: Unsanitized input concatenated directly into SQL string
-  const sql = `SELECT * FROM products WHERE category = '${category}' LIMIT ${limit}`;
+  // FIX: Using parameterized inputs to prevent SQL Injection
+  const sql = `SELECT * FROM products WHERE category = $1 LIMIT $2`;
   
   try {
-    const data = await queryDb(sql);
+    const data = await queryDb(sql, [category, limit]);
     res.status(200).json({
       count: data.length,
       results: data,
@@ -33,7 +32,6 @@ productRoutes.get('/:id', async (req, res, next) => {
   const productId = req.params.id;
   
   try {
-    // Correctly parameterized query (Strength)
     const sql = `SELECT * FROM products WHERE id = $1`;
     const data = await queryDb(sql, [productId]);
     
